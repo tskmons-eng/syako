@@ -429,8 +429,10 @@ async function loadPdfPage(pdfDoc, fileName) {
 
 async function loadFont(pdfDoc) {
   pdfDoc.registerFontkit(fontkit);
-  const bytes = await fetch(FONT_URL).then((response) => response.arrayBuffer());
-  return pdfDoc.embedFont(bytes, { subset: true });
+  const response = await fetch(FONT_URL);
+  if (!response.ok) throw new Error("日本語フォントを読み込めませんでした。");
+  const bytes = await response.arrayBuffer();
+  return pdfDoc.embedFont(bytes, { subset: false });
 }
 
 async function fillPage(pdfDoc, templateName, data, fileName, font, images) {
@@ -454,7 +456,7 @@ async function fillPage(pdfDoc, templateName, data, fileName, font, images) {
     fitText(page, font, parking.location, 302, 391, 475, 11);
     drawDate(page, font, commonDate, 520, 350);
     fitText(page, font, policeStation, 143, 328, 38, 11);
-    fitText(page, font, applicant.postal, 242, 328, 170, 10);
+    fitText(page, font, applicant.postal, 458, 288, 150, 11);
     fitText(page, font, applicant.address, 475, 304, 255, 10);
     fitText(page, font, applicant.phone, 615, 270, 95, 8);
     fitText(page, font, applicant.name, 475, 246, 220, 11);
