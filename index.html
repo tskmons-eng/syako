@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>車庫証明PDF作成</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -87,6 +88,32 @@
       </section>
 
       <section>
+        <h2>地図</h2>
+        <div class="grid two">
+          <label class="wide">住所検索
+            <span class="inline-control">
+              <input id="mapSearchText" placeholder="保管場所の住所で検索">
+              <button id="mapSearchBtn" type="button">検索</button>
+            </span>
+          </label>
+          <label>緯度<input name="parking.map_lat" readonly></label>
+          <label>経度<input name="parking.map_lng" readonly></label>
+          <label>所在図ズーム<input name="parking.overview_zoom" type="number" min="1" max="19" value="15"></label>
+          <label>配置図ズーム<input name="parking.detail_zoom" type="number" min="1" max="19" value="18"></label>
+        </div>
+        <div class="map-grid">
+          <div>
+            <div class="map-title">所在図</div>
+            <div id="overviewMap" class="map-box"></div>
+          </div>
+          <div>
+            <div class="map-title">配置図</div>
+            <div id="detailMap" class="map-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
         <h2>所有者・管理者</h2>
         <div class="grid two">
           <label>郵便番号<input name="owner.postal"></label>
@@ -122,12 +149,13 @@
 
     <aside class="preview">
       <h2>出力</h2>
-      <p id="status">GAS URLを設定してからPDFを作成してください。</p>
+      <p id="status">入力後、PDFを作成してください。</p>
       <a id="openPdfLink" href="#" target="_blank" rel="noopener" hidden>PDFを開く</a>
       <iframe id="pdfFrame" title="PDF preview"></iframe>
     </aside>
   </main>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="./config.js"></script>
   <script src="./app.js"></script>
 </body>
