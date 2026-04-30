@@ -11,7 +11,7 @@
   <header class="topbar">
     <div>
       <h1>車庫証明PDF作成</h1>
-      <p>入力内容をGoogle Apps Scriptへ送信し、Google DriveにPDFを作成します。</p>
+      <p>ブラウザだけで警察様式PDFへ直接入力します。作成データはサーバーへ保存されません。</p>
     </div>
     <button id="sampleBtn" type="button">サンプル入力</button>
   </header>
@@ -114,6 +114,14 @@
       </section>
 
       <section>
+        <h2>土地・建物</h2>
+        <fieldset class="checks">
+          <label><input type="checkbox" name="land_building" value="land" checked> 土地</label>
+          <label><input type="checkbox" name="land_building" value="building"> 建物</label>
+        </fieldset>
+      </section>
+
+      <section>
         <h2>所有者・管理者</h2>
         <div class="grid two">
           <label>郵便番号<input name="owner.postal"></label>
@@ -156,7 +164,8 @@
   </main>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="./config.js"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
