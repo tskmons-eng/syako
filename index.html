@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>車庫証明PDF作成</title>
+  <title>自動車保管場所届出PDF作成</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <header class="topbar">
     <div>
-      <h1>車庫証明PDF作成</h1>
+      <h1>自動車保管場所届出PDF作成</h1>
       <p>ブラウザだけで警察様式PDFへ直接入力します。作成データはサーバーへ保存されません。</p>
     </div>
     <button id="sampleBtn" type="button">サンプル入力</button>
@@ -19,15 +19,25 @@
   <main class="layout">
     <form id="form" class="form">
       <section>
-        <h2>申請</h2>
+        <h2>出力書類</h2>
+        <fieldset class="checks">
+          <label><input type="checkbox" name="documents.application" checked> 届出書（２通）</label>
+          <label><input type="checkbox" name="documents.map" checked> 所在図・配置図</label>
+          <label><input type="checkbox" name="documents.self" checked> 自認書</label>
+          <label><input type="checkbox" name="documents.permission" checked> 使用承諾書</label>
+        </fieldset>
+      </section>
+
+      <section>
+        <h2>届出</h2>
         <div class="grid four">
           <label>警察署<input name="police_station" placeholder="前橋"></label>
-          <label>申請日<input name="application_date" type="date"></label>
+          <label>届出日<input name="application_date" type="date"></label>
           <label>申請区分
             <select name="request_type">
               <option value="new">新規</option>
               <option value="replace">代替</option>
-              <option value="notification">届出</option>
+              <option value="notification" selected>届出</option>
             </select>
           </label>
           <label>使用権原
@@ -41,7 +51,7 @@
       </section>
 
       <section>
-        <h2>申請者</h2>
+        <h2>届出者</h2>
         <div class="grid two">
           <label>郵便番号<input name="applicant.postal" placeholder="371-0000"></label>
           <label>電話番号<input name="applicant.phone" placeholder="027-000-0000"></label>
@@ -87,7 +97,7 @@
         </div>
       </section>
 
-      <section>
+      <section id="mapSection">
         <h2>地図</h2>
         <div class="grid two">
           <label class="wide check-line"><input name="parking.use_map_images" type="checkbox" checked> 所在図・配置図へ地図を貼り付ける</label>
@@ -117,7 +127,7 @@
         </div>
       </section>
 
-      <section>
+      <section id="landBuildingSection">
         <h2>土地・建物</h2>
         <fieldset class="checks">
           <label><input type="checkbox" name="land_building" value="land" checked> 土地</label>
@@ -125,9 +135,10 @@
         </fieldset>
       </section>
 
-      <section>
+      <section id="ownerSection">
         <h2>所有者・管理者</h2>
         <div class="grid two">
+          <label class="wide check-line"><input id="ownerSameAsApplicant" type="checkbox"> 届出者と同じにする</label>
           <label>郵便番号<input name="owner.postal"></label>
           <label>電話番号<input name="owner.phone"></label>
           <label class="wide">住所<input name="owner.address"></label>
@@ -141,16 +152,6 @@
           <label>氏名・担当者<input name="contact.name"></label>
           <label>電話番号<input name="contact.phone"></label>
         </div>
-      </section>
-
-      <section>
-        <h2>出力書類</h2>
-        <fieldset class="checks">
-          <label><input type="checkbox" name="documents.application" checked> 申請書</label>
-          <label><input type="checkbox" name="documents.map" checked> 所在図・配置図</label>
-          <label><input type="checkbox" name="documents.self" checked> 自認書</label>
-          <label><input type="checkbox" name="documents.permission" checked> 使用承諾書</label>
-        </fieldset>
       </section>
 
       <div class="actions">

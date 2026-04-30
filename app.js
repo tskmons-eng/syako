@@ -12,6 +12,7 @@ const mapSearchText = document.querySelector("#mapSearchText");
 const mapSearchBtn = document.querySelector("#mapSearchBtn");
 const baseSameAsAddress = document.querySelector("#baseSameAsAddress");
 const parkingSameAsBase = document.querySelector("#parkingSameAsBase");
+const ownerSameAsApplicant = document.querySelector("#ownerSameAsApplicant");
 
 const STORAGE_KEY = "garage-certificate-pages-form";
 const FONT_URL = "https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf";
@@ -70,6 +71,7 @@ function fillForm(data) {
   applyLinkedFields();
   updateUseTo();
   syncMapsFromInputs();
+  updateDocumentSections();
 }
 
 function saveForm() {
@@ -122,9 +124,24 @@ function applyLinkedFields() {
   if (parkingSameAsBase?.checked) {
     field("parking.location").value = field("applicant.base_address").value;
   }
+  if (ownerSameAsApplicant?.checked) {
+    field("owner.postal").value = field("applicant.postal").value;
+    field("owner.address").value = field("applicant.address").value;
+    field("owner.phone").value = field("applicant.phone").value;
+    field("owner.name").value = field("applicant.name").value;
+  }
   if (mapSearchText && !mapSearchText.value) {
     mapSearchText.value = field("parking.location").value || field("applicant.base_address").value || field("applicant.address").value;
   }
+}
+
+function updateDocumentSections() {
+  const mapSection = document.getElementById("mapSection");
+  const landBuildingSection = document.getElementById("landBuildingSection");
+  const ownerSection = document.getElementById("ownerSection");
+  if (mapSection) mapSection.hidden = !(field("documents.map")?.checked ?? true);
+  if (landBuildingSection) landBuildingSection.hidden = !(field("documents.self")?.checked ?? true);
+  if (ownerSection) ownerSection.hidden = !(field("documents.permission")?.checked ?? true);
 }
 
 function reiwaYear(year) {
@@ -428,7 +445,7 @@ async function fillPage(pdfDoc, templateName, data, fileName, font, images) {
 
   if (templateName === "application") {
     fitText(page, font, vehicle.maker, 82, 463, 70, 11);
-    fitText(page, font, vehicle.model, 205, 463, 130, 10);
+    fitText(page, font, vehicle.model, 285, 463, 130, 10);
     fitText(page, font, vehicle.chassis_no, 420, 463, 125, 9);
     drawDigitCells(page, font, vehicle.length_cm, 631, 475);
     drawDigitCells(page, font, vehicle.width_cm, 631, 462);
@@ -437,7 +454,7 @@ async function fillPage(pdfDoc, templateName, data, fileName, font, images) {
     fitText(page, font, parking.location, 302, 391, 475, 11);
     drawDate(page, font, commonDate, 520, 350);
     fitText(page, font, policeStation, 143, 328, 38, 11);
-    fitText(page, font, applicant.postal, 292, 328, 170, 10);
+    fitText(page, font, applicant.postal, 242, 328, 170, 10);
     fitText(page, font, applicant.address, 475, 304, 255, 10);
     fitText(page, font, applicant.phone, 615, 270, 95, 8);
     fitText(page, font, applicant.name, 475, 246, 220, 11);
@@ -523,7 +540,10 @@ async function createPdf() {
   const font = await loadFont(pdfDoc);
   const docs = data.documents || {};
   const authority = text(data.authority);
-  if (docs.application !== false) await fillPage(pdfDoc, "application", data, "application.pdf", font, images);
+  if (docs.application !== false) {
+    await fillPage(pdfDoc, "application", data, "application.pdf", font, images);
+    await fillPage(pdfDoc, "application", data, "application.pdf", font, images);
+  }
   if (docs.map !== false) await fillPage(pdfDoc, "map", data, "map_layout.pdf", font, images);
   if (["self", "shared"].includes(authority) && docs.self !== false) {
     await fillPage(pdfDoc, "self", data, "self_certification.pdf", font, images);
@@ -546,6 +566,7 @@ form.addEventListener("input", saveForm);
 form.addEventListener("change", (event) => {
   if (event.target === field("parking.use_from")) updateUseTo();
   applyLinkedFields();
+  updateDocumentSections();
   saveForm();
 });
 baseSameAsAddress?.addEventListener("change", () => {
@@ -553,6 +574,10 @@ baseSameAsAddress?.addEventListener("change", () => {
   saveForm();
 });
 parkingSameAsBase?.addEventListener("change", () => {
+  applyLinkedFields();
+  saveForm();
+});
+ownerSameAsApplicant?.addEventListener("change", () => {
   applyLinkedFields();
   saveForm();
 });
@@ -662,4 +687,5 @@ sampleBtn.addEventListener("click", () => {
 });
 
 loadForm();
+updateDocumentSections();
 initMapPair();
