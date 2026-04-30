@@ -47,6 +47,7 @@
           <label>電話番号<input name="applicant.phone" placeholder="027-000-0000"></label>
           <label class="wide">住所<input name="applicant.address"></label>
           <label class="wide">氏名<input name="applicant.name"></label>
+          <label class="wide check-line"><input id="baseSameAsAddress" type="checkbox"> 使用の本拠の位置を住所と同じにする</label>
           <label class="wide">使用の本拠の位置<input name="applicant.base_address"></label>
         </div>
       </section>
@@ -68,11 +69,12 @@
       <section>
         <h2>保管場所</h2>
         <div class="grid two">
+          <label class="wide check-line"><input id="parkingSameAsBase" type="checkbox"> 保管場所の位置を使用の本拠の位置と同じにする</label>
           <label class="wide">保管場所の位置<input name="parking.location"></label>
           <label>駐車場名<input name="parking.name"></label>
           <label>駐車位置番号<input name="parking.space_no"></label>
           <label>使用開始日<input name="parking.use_from" type="date"></label>
-          <label>使用終了日<input name="parking.use_to" type="date"></label>
+          <label>使用終了日<input name="parking.use_to" type="date" readonly></label>
           <label>シャッター
             <select name="parking.shutter">
               <option value="">未選択</option>
@@ -82,14 +84,16 @@
           </label>
           <label class="wide">所在図メモ<textarea name="parking.map_note" rows="3"></textarea></label>
           <label class="wide">配置図メモ<textarea name="parking.layout_note" rows="3"></textarea></label>
-          <label>所在図画像<input id="overviewImageInput" type="file" accept="image/*"></label>
-          <label>配置図画像<input id="detailImageInput" type="file" accept="image/*"></label>
         </div>
       </section>
 
       <section>
         <h2>地図</h2>
         <div class="grid two">
+          <label class="wide check-line"><input name="parking.use_map_images" type="checkbox" checked> 所在図・配置図へ地図を貼り付ける</label>
+          <label>所在図画像<input id="overviewImageInput" type="file" accept="image/*"></label>
+          <label>配置図画像<input id="detailImageInput" type="file" accept="image/*"></label>
+          <p class="hint wide">画像を選んだ場合は地図より画像を優先します。画像は枠に合わせて中央で切り抜きます。</p>
           <label class="wide">住所検索
             <span class="inline-control">
               <input id="mapSearchText" placeholder="保管場所の住所で検索">
@@ -160,6 +164,7 @@
       <p id="status">入力後、PDFを作成してください。</p>
       <a id="openPdfLink" href="#" target="_blank" rel="noopener" hidden>PDFを開く</a>
       <iframe id="pdfFrame" title="PDF preview"></iframe>
+      <button id="printBtn" type="button" disabled>PDFを印刷</button>
     </aside>
   </main>
 

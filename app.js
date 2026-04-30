@@ -3,12 +3,15 @@ const statusEl = document.querySelector("#status");
 const frame = document.querySelector("#pdfFrame");
 const openPdfLink = document.querySelector("#openPdfLink");
 const submitBtn = document.querySelector("#submitBtn");
+const printBtn = document.querySelector("#printBtn");
 const clearBtn = document.querySelector("#clearBtn");
 const sampleBtn = document.querySelector("#sampleBtn");
 const overviewImageInput = document.querySelector("#overviewImageInput");
 const detailImageInput = document.querySelector("#detailImageInput");
 const mapSearchText = document.querySelector("#mapSearchText");
 const mapSearchBtn = document.querySelector("#mapSearchBtn");
+const baseSameAsAddress = document.querySelector("#baseSameAsAddress");
+const parkingSameAsBase = document.querySelector("#parkingSameAsBase");
 
 const STORAGE_KEY = "garage-certificate-pages-form";
 const FONT_URL = "https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf";
@@ -37,6 +40,7 @@ function setDeep(target, path, value) {
 }
 
 function collectForm() {
+  applyLinkedFields();
   const data = {};
   for (const item of form.elements) {
     if (!item.name) continue;
@@ -63,6 +67,8 @@ function fillForm(data) {
     if (item.type === "checkbox") item.checked = Boolean(value);
     else item.value = value;
   }
+  applyLinkedFields();
+  updateUseTo();
   syncMapsFromInputs();
 }
 
@@ -80,6 +86,7 @@ function loadForm() {
   if (!field("application_date").value) field("application_date").value = new Date().toISOString().slice(0, 10);
   if (!field("parking.overview_zoom").value) field("parking.overview_zoom").value = "15";
   if (!field("parking.detail_zoom").value) field("parking.detail_zoom").value = "18";
+  updateUseTo();
 }
 
 function splitDate(value) {
@@ -103,11 +110,42 @@ function addYears(dateValue, years) {
   return result.toISOString().slice(0, 10);
 }
 
+function updateUseTo() {
+  const from = field("parking.use_from").value;
+  if (from) field("parking.use_to").value = addYears(from, 3);
+}
+
+function applyLinkedFields() {
+  if (baseSameAsAddress?.checked) {
+    field("applicant.base_address").value = field("applicant.address").value;
+  }
+  if (parkingSameAsBase?.checked) {
+    field("parking.location").value = field("applicant.base_address").value;
+  }
+  if (mapSearchText && !mapSearchText.value) {
+    mapSearchText.value = field("parking.location").value || field("applicant.base_address").value || field("applicant.address").value;
+  }
+}
+
 function reiwaYear(year) {
   const y = Number(year);
   if (!Number.isFinite(y)) return year;
   if (y >= 2019) return y === 2019 ? "元" : String(y - 2018);
   return String(y);
+}
+
+function timestampName() {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+  return [
+    now.getFullYear(),
+    pad(now.getMonth() + 1),
+    pad(now.getDate()),
+    "_",
+    pad(now.getHours()),
+    pad(now.getMinutes()),
+    pad(now.getSeconds())
+  ].join("");
 }
 
 function drawText(page, font, value, x, y, size = 11) {
@@ -312,16 +350,34 @@ async function renderOsmMap(lat, lng, zoom, width = 900, height = 720) {
   return canvas.toDataURL("image/png");
 }
 
-async function fileToDataUrl(input) {
+async function fileToDataUrl(input, targetRatio = null) {
   const file = input?.files?.[0];
   if (!file) return "";
   const image = await createImageBitmap(file);
   const maxSide = 1600;
   const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(image.width * scale);
-  canvas.height = Math.round(image.height * scale);
-  canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+  if (targetRatio) {
+    let sx = 0;
+    let sy = 0;
+    let sw = image.width;
+    let sh = image.height;
+    const sourceRatio = image.width / image.height;
+    if (sourceRatio > targetRatio) {
+      sw = Math.round(image.height * targetRatio);
+      sx = Math.round((image.width - sw) / 2);
+    } else {
+      sh = Math.round(image.width / targetRatio);
+      sy = Math.round((image.height - sh) / 2);
+    }
+    canvas.width = Math.round(sw * scale);
+    canvas.height = Math.round(sh * scale);
+    canvas.getContext("2d").drawImage(image, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  } else {
+    canvas.width = Math.round(image.width * scale);
+    canvas.height = Math.round(image.height * scale);
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+  }
   return canvas.toDataURL("image/jpeg", 0.86);
 }
 
@@ -397,13 +453,14 @@ async function fillPage(pdfDoc, templateName, data, fileName, font, images) {
   }
 
   if (templateName === "map") {
-    const overviewBox = [62, 139, 357, 348];
-    const detailBox = [421, 139, 356, 348];
-    let hasOverview = await drawImageBox(pdfDoc, page, images.overview, ...overviewBox);
-    let hasDetail = await drawImageBox(pdfDoc, page, images.detail, ...detailBox);
-    const lat = Number(parking.map_lat);
-    const lng = Number(parking.map_lng);
-    if ((!hasOverview || !hasDetail) && Number.isFinite(lat) && Number.isFinite(lng)) {
+  const overviewBox = [62, 139, 357, 348];
+  const detailBox = [421, 139, 356, 348];
+  let hasOverview = await drawImageBox(pdfDoc, page, images.overview, ...overviewBox);
+  let hasDetail = await drawImageBox(pdfDoc, page, images.detail, ...detailBox);
+  const lat = Number(parking.map_lat);
+  const lng = Number(parking.map_lng);
+    const useMapImages = parking.use_map_images === true || text(parking.use_map_images) === "true";
+    if (useMapImages && (!hasOverview || !hasDetail) && Number.isFinite(lat) && Number.isFinite(lng)) {
       if (!hasOverview) {
         const mapImage = await renderOsmMap(lat, lng, Math.max(1, Math.min(19, Number(parking.overview_zoom || 15))));
         hasOverview = await drawImageBox(pdfDoc, page, mapImage, ...overviewBox);
@@ -458,8 +515,8 @@ async function createPdf() {
   data.parking ||= {};
   if (data.parking.use_from && !data.parking.use_to) data.parking.use_to = addYears(data.parking.use_from, 3);
   const images = {
-    overview: await fileToDataUrl(overviewImageInput),
-    detail: await fileToDataUrl(detailImageInput)
+    overview: await fileToDataUrl(overviewImageInput, 357 / 348),
+    detail: await fileToDataUrl(detailImageInput, 356 / 348)
   };
 
   const pdfDoc = await PDFLib.PDFDocument.create();
@@ -481,12 +538,24 @@ async function createPdf() {
   currentPdfUrl = URL.createObjectURL(blob);
   return {
     url: currentPdfUrl,
-    name: `garage_certificate_${new Date().toISOString().replace(/[-:T]/g, "").slice(0, 15)}.pdf`
+    name: `garage_certificate_${timestampName()}.pdf`
   };
 }
 
 form.addEventListener("input", saveForm);
-form.addEventListener("change", saveForm);
+form.addEventListener("change", (event) => {
+  if (event.target === field("parking.use_from")) updateUseTo();
+  applyLinkedFields();
+  saveForm();
+});
+baseSameAsAddress?.addEventListener("change", () => {
+  applyLinkedFields();
+  saveForm();
+});
+parkingSameAsBase?.addEventListener("change", () => {
+  applyLinkedFields();
+  saveForm();
+});
 mapSearchBtn.addEventListener("click", searchMapAddress);
 field("parking.overview_zoom").addEventListener("change", syncMapsFromInputs);
 field("parking.detail_zoom").addEventListener("change", syncMapsFromInputs);
@@ -494,6 +563,7 @@ field("parking.detail_zoom").addEventListener("change", syncMapsFromInputs);
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   submitBtn.disabled = true;
+  printBtn.disabled = true;
   openPdfLink.hidden = true;
   statusEl.textContent = "PDFを作成しています...";
   try {
@@ -502,6 +572,7 @@ form.addEventListener("submit", async (event) => {
     openPdfLink.download = result.name;
     openPdfLink.hidden = false;
     frame.src = result.url;
+    printBtn.disabled = false;
     statusEl.textContent = `${result.name} を作成しました。`;
   } catch (error) {
     statusEl.textContent = error.message;
@@ -510,11 +581,18 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+printBtn.addEventListener("click", () => {
+  if (!frame.src) return;
+  frame.contentWindow?.focus();
+  frame.contentWindow?.print();
+});
+
 clearBtn.addEventListener("click", () => {
   form.reset();
   overviewImageInput.value = "";
   detailImageInput.value = "";
   openPdfLink.hidden = true;
+  printBtn.disabled = true;
   frame.src = "about:blank";
   localStorage.removeItem(STORAGE_KEY);
   field("application_date").value = new Date().toISOString().slice(0, 10);
@@ -553,6 +631,7 @@ sampleBtn.addEventListener("click", () => {
       use_from: today,
       use_to: addYears(today, 3),
       shutter: "no",
+      use_map_images: true,
       map_note: "別紙地図または画像を添付",
       layout_note: "駐車区画 幅2.5m 長さ5.0m",
       map_lat: "36.389500",
