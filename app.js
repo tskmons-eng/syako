@@ -456,7 +456,7 @@ async function fillPage(pdfDoc, templateName, data, fileName, font, images) {
     fitText(page, font, parking.location, 302, 391, 475, 11);
     drawDate(page, font, commonDate, 520, 350);
     fitText(page, font, policeStation, 143, 328, 38, 11);
-    fitText(page, font, applicant.postal, 524, 354, 150, 11);
+    fitText(page, font, applicant.postal, 458, 321, 150, 11);
     fitText(page, font, applicant.address, 475, 304, 255, 10);
     fitText(page, font, applicant.phone, 615, 270, 95, 8);
     fitText(page, font, applicant.name, 475, 246, 220, 11);
@@ -498,8 +498,7 @@ async function fillPage(pdfDoc, templateName, data, fileName, font, images) {
   }
 
   if (templateName === "self") {
-    if (data.request_type === "notification") markCircle(page, 130, 423, 38, 18);
-    else markCircle(page, 80, 423, 62, 18);
+    markCircle(page, 130, 423, 38, 18);
     const landBuilding = new Set(data.land_building || []);
     if (landBuilding.has("land")) markCircle(page, 309, 423, 28, 18);
     if (landBuilding.has("building")) markCircle(page, 338, 423, 40, 18);
