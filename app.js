@@ -177,11 +177,11 @@ function fitText(page, font, value, x, y, width, size = 11) {
 }
 
 function drawDate(page, font, value, x, y, options = {}) {
-  const { era = true, monthDx = 95, dayDx = 150 } = options;
+  const { era = true, monthDx = 95, dayDx = 150, size = 11 } = options;
   const [year, month, day] = splitDate(value);
-  drawText(page, font, era ? reiwaYear(year) : year, x, y, 11);
-  drawText(page, font, month, x + monthDx, y, 11);
-  drawText(page, font, day, x + dayDx, y, 11);
+  drawText(page, font, era ? reiwaYear(year) : year, x, y, size);
+  drawText(page, font, month, x + monthDx, y, size);
+  drawText(page, font, day, x + dayDx, y, size);
 }
 
 function drawDigitCells(page, font, value, x, y, cellW = 21, maxDigits = 4, size = 10) {
@@ -453,12 +453,12 @@ async function fillPage(pdfDoc, templateName, data, fileName, font, images) {
   }
 
   if (templateName === "map") {
-  const overviewBox = [62, 139, 357, 348];
-  const detailBox = [421, 139, 356, 348];
-  let hasOverview = await drawImageBox(pdfDoc, page, images.overview, ...overviewBox);
-  let hasDetail = await drawImageBox(pdfDoc, page, images.detail, ...detailBox);
-  const lat = Number(parking.map_lat);
-  const lng = Number(parking.map_lng);
+    const overviewBox = [62, 139, 357, 348];
+    const detailBox = [421, 139, 356, 348];
+    let hasOverview = await drawImageBox(pdfDoc, page, images.overview, ...overviewBox);
+    let hasDetail = await drawImageBox(pdfDoc, page, images.detail, ...detailBox);
+    const lat = Number(parking.map_lat);
+    const lng = Number(parking.map_lng);
     const useMapImages = parking.use_map_images === true || text(parking.use_map_images) === "true";
     if (useMapImages && (!hasOverview || !hasDetail) && Number.isFinite(lat) && Number.isFinite(lng)) {
       if (!hasOverview) {
@@ -500,9 +500,9 @@ async function fillPage(pdfDoc, templateName, data, fileName, font, images) {
     fitText(page, font, applicant.address, 238, 386, 265, 10);
     fitText(page, font, applicant.phone, 560, 368, 170, 11);
     fitText(page, font, applicant.name, 235, 333, 270, 12);
-    drawDate(page, font, text(parking.use_from), 422, 296, { monthDx: 70, dayDx: 138 });
-    drawDate(page, font, text(parking.use_to), 422, 268, { monthDx: 70, dayDx: 138 });
-    drawDate(page, font, commonDate, 520, 219);
+    drawDate(page, font, text(parking.use_from), 422, 296, { monthDx: 70, dayDx: 138, size: 12 });
+    drawDate(page, font, text(parking.use_to), 422, 268, { monthDx: 70, dayDx: 138, size: 12 });
+    drawDate(page, font, commonDate, 520, 219, { size: 12 });
     fitText(page, font, owner.postal, 482, 207, 130, 10);
     fitText(page, font, owner.address, 475, 190, 245, 10);
     fitText(page, font, owner.phone, 535, 155, 175, 11);
