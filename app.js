@@ -17,6 +17,7 @@ const ownerSameAsApplicant = document.querySelector("#ownerSameAsApplicant");
 const STORAGE_KEY = "garage-certificate-pages-form";
 const FONT_URL = "https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf";
 const ZIPCODA_API = "https://zipcoda.net/api";
+const DOCUMENT_FIELDS = ["documents.application", "documents.map", "documents.self", "documents.permission"];
 let overviewMap;
 let detailMap;
 let overviewMarker;
@@ -80,6 +81,14 @@ function saveForm() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(collectForm()));
 }
 
+function resetSparseDocumentSelection() {
+  const checkedCount = DOCUMENT_FIELDS.filter((name) => field(name)?.checked).length;
+  if (checkedCount > 1) return;
+  for (const name of DOCUMENT_FIELDS) {
+    if (field(name)) field(name).checked = true;
+  }
+}
+
 function loadForm() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
@@ -87,6 +96,7 @@ function loadForm() {
   } catch {
     localStorage.removeItem(STORAGE_KEY);
   }
+  resetSparseDocumentSelection();
   if (!field("application_date").value) field("application_date").value = new Date().toISOString().slice(0, 10);
   if (!field("parking.overview_zoom").value) field("parking.overview_zoom").value = "15";
   if (!field("parking.detail_zoom").value) field("parking.detail_zoom").value = "18";
@@ -685,7 +695,8 @@ async function createPdf() {
   currentPdfUrl = URL.createObjectURL(blob);
   return {
     url: currentPdfUrl,
-    name: `garage_certificate_${timestampName()}.pdf`
+    name: `garage_certificate_${timestampName()}.pdf`,
+    pages: pdfDoc.getPageCount()
   };
 }
 
@@ -746,7 +757,7 @@ form.addEventListener("submit", async (event) => {
     openPdfLink.hidden = false;
     frame.src = result.url;
     printBtn.disabled = false;
-    statusEl.textContent = `${result.name} を作成しました。`;
+    statusEl.textContent = `${result.name} を作成しました（${result.pages}ページ）。`;
   } catch (error) {
     statusEl.textContent = error.message;
   } finally {
