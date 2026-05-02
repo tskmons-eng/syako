@@ -16,11 +16,13 @@ const ownerSameAsApplicant = document.querySelector("#ownerSameAsApplicant");
 
 const STORAGE_KEY = "garage-certificate-pages-form";
 const FONT_URL = "https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf";
+const ZIPCODA_API = "https://zipcoda.net/api";
 let overviewMap;
 let detailMap;
 let overviewMarker;
 let detailMarker;
 let currentPdfUrl;
+let postalLookupTimer;
 
 function field(name) {
   return form.elements[name];
@@ -117,6 +119,110 @@ function updateUseTo() {
   if (from) field("parking.use_to").value = addYears(from, 3);
 }
 
+function normalizePostal(value) {
+  return text(value).replace(/[^\d]/g, "");
+}
+
+function formatPostal(value) {
+  const digits = normalizePostal(value);
+  if (digits.length !== 7) return text(value);
+  return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+}
+
+function zipcodaAddress(item) {
+  if (Array.isArray(item.components) && item.components.length) {
+    return item.components.join("");
+  }
+  return `${item.pref || ""}${item.address || ""}`;
+}
+
+function addressCandidates(value) {
+  const raw = text(value).replace(/\s+/g, " ");
+  const withoutNumbers = raw
+    .replace(/[0-9０-９].*$/, "")
+    .replace(/[一二三四五六七八九十]+丁目.*$/, "")
+    .trim();
+  return [...new Set([raw, withoutNumbers].filter(Boolean))];
+}
+
+async function fetchZipcoda(params) {
+  const callback = `zipcodaCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const query = new URLSearchParams({ ...params, callback });
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    const cleanup = () => {
+      clearTimeout(timer);
+      script.remove();
+      delete window[callback];
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error("郵便番号APIの応答がありませんでした。"));
+    }, 10000);
+    window[callback] = (data) => {
+      cleanup();
+      if (data.status !== 200 || !data.items?.length) {
+        reject(new Error("該当する住所が見つかりませんでした。"));
+        return;
+      }
+      resolve(data);
+    };
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("郵便番号APIに接続できませんでした。"));
+    };
+    script.src = `${ZIPCODA_API}?${query}`;
+    document.head.append(script);
+  });
+}
+
+function fillAddressFromZip(target, item) {
+  const postal = field(`${target}.postal`);
+  const address = field(`${target}.address`);
+  if (postal) postal.value = formatPostal(item.zipcode);
+  if (address) address.value = zipcodaAddress(item);
+  applyLinkedFields();
+  if (mapSearchText && !mapSearchText.value) mapSearchText.value = address?.value || "";
+  saveForm();
+}
+
+async function lookupPostal(target, { quiet = false } = {}) {
+  const postal = field(`${target}.postal`);
+  const digits = normalizePostal(postal?.value);
+  if (digits.length !== 7) {
+    if (!quiet && digits) statusEl.textContent = "郵便番号は7桁で入力してください。";
+    return;
+  }
+  if (!quiet) statusEl.textContent = "郵便番号から住所を検索しています...";
+  const data = await fetchZipcoda({ zipcode: digits });
+  fillAddressFromZip(target, data.items[0]);
+  const suffix = data.length > 1 ? `（候補${data.length}件の先頭）` : "";
+  statusEl.textContent = `住所を入力しました${suffix}。`;
+}
+
+async function lookupAddress(target) {
+  const address = field(`${target}.address`);
+  const candidates = addressCandidates(address?.value);
+  if (!candidates.length) {
+    statusEl.textContent = "住所を入力してから検索してください。";
+    return;
+  }
+  statusEl.textContent = "住所から郵便番号を検索しています...";
+  let lastError;
+  for (const candidate of candidates) {
+    try {
+      const data = await fetchZipcoda({ address: candidate });
+      fillAddressFromZip(target, data.items[0]);
+      const suffix = data.length > 1 ? `（候補${data.length}件の先頭）` : "";
+      statusEl.textContent = `郵便番号を入力しました${suffix}。`;
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  statusEl.textContent = lastError?.message || "該当する郵便番号が見つかりませんでした。";
+}
+
 function applyLinkedFields() {
   if (baseSameAsAddress?.checked) {
     field("applicant.base_address").value = field("applicant.address").value;
@@ -142,6 +248,14 @@ function updateDocumentSections() {
   if (mapSection) mapSection.hidden = !(field("documents.map")?.checked ?? true);
   if (landBuildingSection) landBuildingSection.hidden = !(field("documents.self")?.checked ?? true);
   if (ownerSection) ownerSection.hidden = !(field("documents.permission")?.checked ?? true);
+}
+
+function moveMapSectionToEnd() {
+  const mapSection = document.getElementById("mapSection");
+  const actions = form.querySelector(".actions");
+  if (mapSection && actions && mapSection.nextElementSibling !== actions) {
+    form.insertBefore(mapSection, actions);
+  }
 }
 
 function reiwaYear(year) {
@@ -581,6 +695,27 @@ ownerSameAsApplicant?.addEventListener("change", () => {
   applyLinkedFields();
   saveForm();
 });
+form.addEventListener("click", async (event) => {
+  const postalButton = event.target.closest("[data-postal-target]");
+  const addressButton = event.target.closest("[data-address-target]");
+  if (!postalButton && !addressButton) return;
+  try {
+    if (postalButton) await lookupPostal(postalButton.dataset.postalTarget);
+    if (addressButton) await lookupAddress(addressButton.dataset.addressTarget);
+  } catch (error) {
+    statusEl.textContent = error.message;
+  }
+});
+form.addEventListener("input", (event) => {
+  if (!event.target.name?.endsWith(".postal")) return;
+  const target = event.target.name.split(".")[0];
+  clearTimeout(postalLookupTimer);
+  postalLookupTimer = setTimeout(() => {
+    lookupPostal(target, { quiet: true }).catch((error) => {
+      statusEl.textContent = error.message;
+    });
+  }, 450);
+});
 mapSearchBtn.addEventListener("click", searchMapAddress);
 field("parking.overview_zoom").addEventListener("change", syncMapsFromInputs);
 field("parking.detail_zoom").addEventListener("change", syncMapsFromInputs);
@@ -687,5 +822,6 @@ sampleBtn.addEventListener("click", () => {
 });
 
 loadForm();
+moveMapSectionToEnd();
 updateDocumentSections();
 initMapPair();
