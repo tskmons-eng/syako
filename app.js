@@ -17,7 +17,6 @@ const ownerSameAsApplicant = document.querySelector("#ownerSameAsApplicant");
 const STORAGE_KEY = "garage-certificate-pages-form";
 const FONT_URL = "https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf";
 const ZIPCODA_API = "https://zipcoda.net/api";
-const DOCUMENT_FIELDS = ["documents.application", "documents.map", "documents.self", "documents.permission"];
 let overviewMap;
 let detailMap;
 let overviewMarker;
@@ -81,14 +80,6 @@ function saveForm() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(collectForm()));
 }
 
-function resetSparseDocumentSelection() {
-  const checkedCount = DOCUMENT_FIELDS.filter((name) => field(name)?.checked).length;
-  if (checkedCount > 1) return;
-  for (const name of DOCUMENT_FIELDS) {
-    if (field(name)) field(name).checked = true;
-  }
-}
-
 function loadForm() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
@@ -96,7 +87,6 @@ function loadForm() {
   } catch {
     localStorage.removeItem(STORAGE_KEY);
   }
-  resetSparseDocumentSelection();
   if (!field("application_date").value) field("application_date").value = new Date().toISOString().slice(0, 10);
   if (!field("parking.overview_zoom").value) field("parking.overview_zoom").value = "15";
   if (!field("parking.detail_zoom").value) field("parking.detail_zoom").value = "18";
@@ -783,6 +773,7 @@ clearBtn.addEventListener("click", () => {
   field("parking.overview_zoom").value = "15";
   field("parking.detail_zoom").value = "18";
   applyLinkedFields();
+  updateDocumentSections();
   setMapCenter(36.3895, 139.0634);
   statusEl.textContent = "入力をクリアしました。";
 });
