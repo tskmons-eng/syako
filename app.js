@@ -239,6 +239,19 @@ function applyLinkedFields() {
   if (mapSearchText && !mapSearchText.value) {
     mapSearchText.value = field("parking.location").value || field("applicant.base_address").value || field("applicant.address").value;
   }
+  updateLinkedFieldVisibility();
+}
+
+function setLinkedGroupHidden(group, hidden) {
+  form.querySelectorAll(`[data-linked-input="${group}"]`).forEach((item) => {
+    item.hidden = hidden;
+  });
+}
+
+function updateLinkedFieldVisibility() {
+  setLinkedGroupHidden("base", Boolean(baseSameAsAddress?.checked));
+  setLinkedGroupHidden("parking", Boolean(parkingSameAsBase?.checked));
+  setLinkedGroupHidden("owner", Boolean(ownerSameAsApplicant?.checked));
 }
 
 function updateDocumentSections() {
@@ -758,6 +771,7 @@ clearBtn.addEventListener("click", () => {
   field("application_date").value = new Date().toISOString().slice(0, 10);
   field("parking.overview_zoom").value = "15";
   field("parking.detail_zoom").value = "18";
+  applyLinkedFields();
   setMapCenter(36.3895, 139.0634);
   statusEl.textContent = "入力をクリアしました。";
 });
@@ -823,5 +837,6 @@ sampleBtn.addEventListener("click", () => {
 
 loadForm();
 moveMapSectionToEnd();
+applyLinkedFields();
 updateDocumentSections();
 initMapPair();

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>自動車保管場所届出PDF作成</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="./styles.css?v=20260502-address">
+  <link rel="stylesheet" href="./styles.css?v=20260502-linked">
 </head>
 <body>
   <header class="topbar">
@@ -67,8 +67,8 @@
             </span>
           </label>
           <label class="wide">氏名<input name="applicant.name"></label>
-          <label class="wide check-line"><input id="baseSameAsAddress" type="checkbox"> 使用の本拠の位置を住所と同じにする</label>
-          <label class="wide">使用の本拠の位置<input name="applicant.base_address"></label>
+          <label class="wide check-line"><input id="baseSameAsAddress" name="links.base_same_as_address" type="checkbox" checked> 使用の本拠の位置を住所と同じにする</label>
+          <label class="wide" data-linked-input="base">使用の本拠の位置<input name="applicant.base_address"></label>
         </div>
       </section>
 
@@ -89,8 +89,8 @@
       <section>
         <h2>保管場所</h2>
         <div class="grid two">
-          <label class="wide check-line"><input id="parkingSameAsBase" type="checkbox"> 保管場所の位置を使用の本拠の位置と同じにする</label>
-          <label class="wide">保管場所の位置<input name="parking.location"></label>
+          <label class="wide check-line"><input id="parkingSameAsBase" name="links.parking_same_as_base" type="checkbox" checked> 保管場所の位置を使用の本拠の位置と同じにする</label>
+          <label class="wide" data-linked-input="parking">保管場所の位置<input name="parking.location"></label>
           <label>駐車場名<input name="parking.name"></label>
           <label>駐車位置番号<input name="parking.space_no"></label>
           <label>使用開始日<input name="parking.use_from" type="date"></label>
@@ -148,21 +148,21 @@
       <section id="ownerSection">
         <h2>所有者・管理者</h2>
         <div class="grid two">
-          <label class="wide check-line"><input id="ownerSameAsApplicant" type="checkbox"> 届出者と同じにする</label>
-          <label>郵便番号
+          <label class="wide check-line"><input id="ownerSameAsApplicant" name="links.owner_same_as_applicant" type="checkbox" checked> 届出者と同じにする</label>
+          <label data-linked-input="owner">郵便番号
             <span class="inline-control postal-control">
               <input name="owner.postal" inputmode="numeric" autocomplete="postal-code">
               <button data-postal-target="owner" type="button">住所</button>
             </span>
           </label>
-          <label>電話番号<input name="owner.phone"></label>
-          <label class="wide">住所
+          <label data-linked-input="owner">電話番号<input name="owner.phone"></label>
+          <label class="wide" data-linked-input="owner">住所
             <span class="inline-control address-control">
               <input name="owner.address">
               <button data-address-target="owner" type="button">〒</button>
             </span>
           </label>
-          <label class="wide">氏名・名称<input name="owner.name"></label>
+          <label class="wide" data-linked-input="owner">氏名・名称<input name="owner.name"></label>
         </div>
       </section>
 
@@ -192,6 +192,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-  <script src="./app.js?v=20260502-address"></script>
+  <script src="./app.js?v=20260502-linked"></script>
 </body>
 </html>
